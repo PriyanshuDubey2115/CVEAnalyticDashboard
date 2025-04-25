@@ -1425,39 +1425,3 @@ function initChartsOnLoad() {
   initializeDreadChart('dread-chart', initialData);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Check authentication on dashboard
-    if (window.location.pathname.includes('index.html')) {
-      if (!localStorage.getItem('authToken')) {
-        window.location.href = 'login.html';
-      }
-    }
-  
-    // Handle login form submission
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-      loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const errorMessage = document.getElementById('error-message');
-  
-        // Mock authentication (replace with server-side API in production)
-        if (username === 'admin' && password === 'password123') {
-          localStorage.setItem('authToken', 'mock-token');
-          window.location.href = 'index.html';
-        } else {
-          errorMessage.style.display = 'block';
-        }
-      });
-    }
-  
-    // Handle logout
-    const logoutButton = document.getElementById('logout-button');
-    if (logoutButton) {
-      logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('authToken');
-        window.location.href = 'login.html';
-      });
-    }
-  });
