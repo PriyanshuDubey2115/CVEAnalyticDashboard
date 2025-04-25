@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vulnerability Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="video-background">
+    <video autoplay muted loop playsinline>
+      <source src="back1.mp4" type="video/mp4" />
+    </video>
+  </div>
+  
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h1>Vulnerability Scan Dashboard <img src="cve.png" alt="Logo" class="header-logo"></h1>
+      
+      <div id="scan-info" class="scan-info" style="display: none;">
+        <span id="scan-date" style="color:black">Scan Date: Not available</span>
+      </div>
+      
+      <div class="stats-container">
+        <div class="stat-box">
+          <span class="stat-label">Total Vulnerabilities:</span>
+          <span id="total-count" class="stat-value" style="background-color: #dbeafe; color: #1e40af;">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">High Severity:</span>
+          <span id="high-count" class="stat-value" style="background-color: #fee2e2; color: #b91c1c;">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Medium Severity:</span>
+          <span id="medium-count" class="stat-value" style="background-color: #fef3c7; color: #92400e;">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Low Severity:</span>
+          <span id="low-count" class="stat-value" style="background-color: #d1fae5; color: #065f46;">0</span>
+        </div>
+        
+      </div>
+      <div class="export-buttons">
+        <button id="export-pdf" class="export-button">Export to PDF</button>
+      </div>
+      <div class="file-upload">
+        <label for="file-upload-input">Upload Scan Results (.txt):</label>
+        <input id="file-upload-input" type="file" accept=".txt">
+      </div>
+      
+    </div>
+    
+    <div class="tab-container">
+      <button class="tab-button active" data-tab="overview">Overview</button>
+      <button class="tab-button" data-tab="vulnerabilities">Vulnerabilities by Type</button>
+      <button class="tab-button" data-tab="urls">URLs</button>
+      <button class="tab-button" data-tab="details">Detail Table</button>
+      <button class="tab-button" data-tab="cve-details">CVE Description</button>
+      <button class="tab-button" data-tab="dread">DREAD Model</button> 
+      
+    </div>
+    
+    <div id="overview" class="tab-content active">
+      <p class="section-description">This section provides an overview of vulnerability distribution based on severity and CVSS scores.</p>
+      <div class="chart-container">
+        <div class="chart-box">
+          <div class="chart-title">Severity Distribution</div>
+          <div class="canvas-container">
+            <canvas id="severity-chart"></canvas>
+          </div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">CVSS Score Distribution</div>
+          <div class="canvas-container">
+            <canvas id="cvss-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="vulnerabilities" class="tab-content">
+      <div class="chart-box">
+        <div class="chart-title">Vulnerabilities by Type</div>
+        <div class="canvas-container">
+          <canvas id="vuln-type-chart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <div id="urls" class="tab-content">
+      <div class="chart-box">
+        <div class="chart-title">Vulnerabilities by URL</div>
+        <div class="canvas-container">
+          <canvas id="url-chart"></canvas>
+        </div>
+      </div>
+    </div>
+    
+    <div id="details" class="tab-content">
+      <div class="table-container">
+        <table id="vuln-table">
+          <thead>
+            <tr>
+              <th>URL</th>
+              <th>Vulnerability</th>
+              <th>Attack Method</th>
+              <th>CVE ID</th>
+              <th>Severity</th>
+              <th>CVSS Score</th>
+            </tr>
+          </thead>
+          <tbody style="color: white;"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="cve-details" class="tab-content">
+      <div class="chart-box">
+        <div class="chart-title">CVE Descriptions and References</div>
+        <div class="cve-container" id="cveSection" style="color: white;">
+          <!-- Dynamic CVEs will appear here -->
+        </div>
+      </div>
+    </div>
+    
+    <div id="dread" class="tab-content">
+      <div class="chart-box">
+        <div class="chart-title">DREAD Score Priority</div>
+        <p class="section-description">This section calculates the DREAD score for each vulnerability and prioritizes them based on risk.</p>
+        <div class="canvas-container">
+          <canvas id="dread-chart"></canvas>
+        </div>
+      </div>
+      <div class="table-container">
+        <table id="dread-table">
+          <thead>
+            <tr>
+              <th>Vulnerability</th>
+              <th>Damage Potential</th>
+              <th>Reproducibility</th>
+              <th>Exploitability</th>
+              <th>Affected Users</th>
+              <th>Discoverability</th>
+              <th>DREAD Score</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody style="color: white;"></tbody>
+        </table>
+      </div>
+    </div>
+
+    
+    <div id="owasp" class="tab-content">
+      <div class="owasp-reference-section">
+        <div class="owasp-reference-title">OWASP Top 10 (2021) - Quick Reference</div>
+        <p style="color: #d1fae5;">The OWASP Top 10 is a standard awareness document for developers and web application security. It represents a broad consensus about the most critical security risks to web applications.</p>
+        
+        <div class="owasp-badge-container">
+          <div class="owasp-badge" data-category="A01:2021">A01: Broken Access Control</div>
+          <div class="owasp-badge" data-category="A02:2021">A02: Cryptographic Failures</div>
+          <div class="owasp-badge" data-category="A03:2021">A03: Injection</div>
+          <div class="owasp-badge" data-category="A04:2021">A04: Insecure Design</div>
+          <div class="owasp-badge" data-category="A05:2021">A05: Security Misconfiguration</div>
+          <div class="owasp-badge" data-category="A06:2021">A06: Vulnerable Components</div>
+          <div class="owasp-badge" data-category="A07:2021">A07: Auth Failures</div>
+          <div class="owasp-badge" data-category="A08:2021">A08: Software & Data Integrity</div>
+          <div class="owasp-badge" data-category="A09:2021">A09: Logging Failures</div>
+          <div class="owasp-badge" data-category="A10:2021">A10: SSRF</div>
+        </div>
+      </div>
+    
+      <div id="owasp-details" class="owasp-details-section">
+        <div class="owasp-details-title" style="color: white;">OWASP Top 10 - Detailed Explanations</div>
+        <div class="accordion-item" data-category="A01:2021">
+          <div class="accordion-header">
+            A01:2021 - Broken Access Control
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>Access control enforces policy such that users cannot act outside of their intended permissions. Failures typically lead to unauthorized information disclosure, modification, or destruction of all data or performing a business function outside the user's limits.</p>
+              <p><strong>Common vulnerabilities include:</strong></p>
+              <ul>
+                <li>Violation of principle of least privilege or deny by default</li>
+                <li>Bypassing access control checks by modifying the URL (parameter tampering or force browsing)</li>
+                <li>Permitting viewing or editing someone else's account, by providing its unique identifier</li>
+                <li>Accessing API with missing access controls for POST, PUT and DELETE</li>
+                <li>Elevation of privilege: acting as a user without being logged in or acting as an admin when logged in as a user</li>
+                <li>Metadata manipulation, such as replaying or tampering with JWT, cookies, or hidden fields</li>
+                <li>CORS misconfiguration allowing API access from unauthorized/untrusted origins</li>
+                <li>Force browsing to authenticated pages as an unauthenticated user or to privileged pages as a standard user</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A02:2021">
+          <div class="accordion-header">
+            A02:2021 - Cryptographic Failures
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>Cryptographic failures refer to weaknesses in the implementation of cryptography, which can lead to sensitive data exposure. Such failures can affect passwords, credit card numbers, health records, personal information, and business secrets.</p>
+              <p><strong>Common issues include:</strong></p>
+              <ul>
+                <li>Transmitting sensitive data in clear text</li>
+                <li>Using deprecated cryptographic algorithms or protocols</li>
+                <li>Using default or weak cryptographic keys</li>
+                <li>Lack of proper key management</li>
+                <li>Not enforcing encryption with security directives like HSTS</li>
+                <li>Using weak password hashing algorithms</li>
+                <li>Using initialization vectors incorrectly or reusing them</li>
+                <li>Using cryptographic functions without setting the mode or with insecure modes</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A03:2021">
+          <div class="accordion-header">
+            A03:2021 - Injection
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>Injection flaws, such as SQL, NoSQL, OS, and LDAP injection, occur when untrusted data is sent to an interpreter as part of a command or query. The attacker's hostile data can trick the interpreter into executing unintended commands or accessing unauthorized data.</p>
+              <p><strong>Common injection types:</strong></p>
+              <ul>
+                <li>SQL injection</li>
+                <li>NoSQL injection</li>
+                <li>OS command injection</li>
+                <li>Object-Relational Mapping (ORM) injection</li>
+                <li>LDAP injection</li>
+                <li>Expression Language injection</li>
+                <li>XML injection (including XXE)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A04:2021">
+          <div class="accordion-header">
+            A04:2021 - Insecure Design
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>Insecure design refers to a broad category of flaws expressed as "missing or ineffective control design." These issues cannot be fixed by perfect implementation as the flaws were introduced in the requirements or design phases.</p>
+              <p><strong>Examples include:</strong></p>
+              <ul>
+                <li>Lack of business risk profiling in the software development process</li>
+                <li>Failing to determine the required security controls during design</li>
+                <li>Creating unnecessarily complex user interfaces that may lead to security issues</li>
+                <li>Lack of proper security requirements</li>
+                <li>Inadequate threat modeling and secure design patterns</li>
+                <li>Misuse of frameworks and libraries through insecure design patterns</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A05:2021">
+          <div class="accordion-header">
+            A05:2021 - Security Misconfiguration
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>Security misconfiguration is the most commonly seen issue, often resulting from insecure default configurations, incomplete or ad hoc configurations, open cloud storage, misconfigured HTTP headers, and verbose error messages containing sensitive information.</p>
+              <p><strong>Common examples include:</strong></p>
+              <ul>
+                <li>Missing appropriate security hardening across application stack</li>
+                <li>Improperly configured permissions on cloud services</li>
+                <li>Unnecessary features enabled/installed (e.g., ports, services, pages, accounts, privileges)</li>
+                <li>Default accounts and their passwords still enabled and unchanged</li>
+                <li>Error handling revealing stack traces or overly informative error messages to users</li>
+                <li>Latest security features disabled or not configured securely</li>
+                <li>Missing security headers or directives, or not using them securely</li>
+                <li>Outdated software with known vulnerabilities</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A06:2021">
+          <div class="accordion-header">
+            A06:2021 - Vulnerable and Outdated Components
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>Components, such as libraries, frameworks, and software modules, run with the same privileges as the application. If a vulnerable component is exploited, such an attack can facilitate serious data loss or server takeover.</p>
+              <p><strong>You are likely vulnerable if:</strong></p>
+              <ul>
+                <li>You do not know the versions of all components you use</li>
+                <li>Your software is vulnerable, unsupported, or out of date</li>
+                <li>You don't scan for vulnerabilities regularly and subscribe to security bulletins</li>
+                <li>You don't fix or upgrade the underlying platform, frameworks, and dependencies in a risk-based, timely fashion</li>
+                <li>Software developers do not test the compatibility of updated, upgraded, or patched libraries</li>
+                <li>You do not secure the components' configurations</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A07:2021">
+          <div class="accordion-header">
+            A07:2021 - Identification and Authentication Failures
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>Authentication-related attacks can be used to assume other users' identities. Due to the prevalence of authentication in applications, attackers have various methods to compromise authentication.</p>
+              <p><strong>Common authentication vulnerabilities include:</strong></p>
+              <ul>
+                <li>Permitting automated attacks like credential stuffing</li>
+                <li>Permitting brute force or other automated attacks</li>
+                <li>Allowing weak or well-known passwords</li>
+                <li>Using weak or ineffective credential recovery processes</li>
+                <li>Using plain text, encrypted, or weakly hashed passwords for storage</li>
+                <li>Missing or ineffective multi-factor authentication</li>
+                <li>Exposing session IDs in the URL</li>
+                <li>Not properly invalidating session IDs</li>
+                <li>Not properly rotating session IDs after successful login</li>
+                <li>Not properly securing session tokens</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A08:2021">
+          <div class="accordion-header">
+            A08:2021 - Software and Data Integrity Failures
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>Software and data integrity failures relate to code and infrastructure that does not protect against integrity violations. Examples include where an application relies upon plugins, libraries, or modules from untrusted sources, repositories, and CDNs.</p>
+              <p><strong>Common scenarios include:</strong></p>
+              <ul>
+                <li>Use of untrusted CDNs, plugins, or libraries</li>
+                <li>Inclusion of components from unverified sources</li>
+                <li>Unsigned or unverified serialized data that is processed without verification</li>
+                <li>Unsecured CI/CD pipelines that allow for unauthorized access or tampering</li>
+                <li>Auto-updates without sufficient integrity verification</li>
+                <li>Lack of proper digital signatures for critical data</li>
+                <li>Deserialization of untrusted data</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A09:2021">
+          <div class="accordion-header">
+            A09:2021 - Security Logging and Monitoring Failures
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>This category helps detect, escalate, and respond to active breaches. Without logging and monitoring, breaches cannot be detected. Insufficient logging, detection, monitoring, and active response occurs at all stages of a breach.</p>
+              <p><strong>Organizations should look for:</strong></p>
+              <ul>
+                <li>Auditable events, such as logins, failed logins, and high-value transactions, not being logged</li>
+                <li>Warnings and errors generating no, inadequate, or unclear log messages</li>
+                <li>Logs of applications and APIs not being monitored for suspicious activity</li>
+                <li>Logs being stored locally only</li>
+                <li>Appropriate alerting thresholds and response escalation processes not in place</li>
+                <li>SIEM systems or dashboards not in place for real-time analysis</li>
+                <li>Penetration testing and scans by DAST tools not triggering alerts</li>
+                <li>The application being unable to detect, escalate, or alert for active attacks in real-time or near real-time</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="accordion-item" data-category="A10:2021">
+          <div class="accordion-header">
+            A10:2021 - Server-Side Request Forgery (SSRF)
+            <span class="accordion-icon">+</span>
+          </div>
+          <div class="accordion-content">
+            <div class="accordion-content-inner">
+              <p>SSRF flaws occur whenever a web application is fetching a remote resource without validating the user-supplied URL. This enables attackers to force the application to send a crafted request to an unexpected destination, even when protected by a firewall, VPN, or network ACL.</p>
+              <p><strong>Prevention methods include:</strong></p>
+              <ul>
+                <li>Network layer: Segment remote resource access functionality in separate networks</li>
+                <li>Enforce "deny by default" firewall policies or network access control rules</li>
+                <li>Application layer: Sanitize and validate all client-supplied input data</li>
+                <li>Disable HTTP redirections</li>
+                <li>Do not send raw responses to clients</li>
+                <li>Use positive allowlisting with DNS resolution</li>
+                <li>Never forward raw HTTP responses to clients</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
