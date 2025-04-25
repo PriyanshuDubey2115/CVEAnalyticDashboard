@@ -13,21 +13,7 @@
     </video>
   </div>
   
-  <!-- Login Container -->
-  <div id="login-container" class="login-container">
-    <div class="login-box">
-      <h2>Vulnerability Dashboard Login</h2>
-      <div class="login-form">
-        <input type="text" id="username" placeholder="Username" required>
-        <input type="password" id="password" placeholder="Password" required>
-        <button id="login-button" class="login-button">Login</button>
-        <p id="login-error" class="login-error" style="display: none; color: #b91c1c;">Invalid username or password</p>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Dashboard Container (hidden by default) -->
-  <div id="dashboard-container" class="dashboard-container" style="display: none;">
+  <div class="dashboard-container">
     <div class="dashboard-header">
       <h1>Vulnerability Scan Dashboard <img src="cve.png" alt="Logo" class="header-logo"></h1>
       
@@ -68,7 +54,8 @@
       <button class="tab-button" data-tab="urls">URLs</button>
       <button class="tab-button" data-tab="details">Detail Table</button>
       <button class="tab-button" data-tab="cve-details">CVE Description</button>
-      <button class="tab-button" data-tab="dread">DREAD Model</button> 
+      <button class="tab-button" data-tab="dread">DREAD Model</button>
+      <button class="tab-button" data-tab="owasp">OWASP Top 10</button>
     </div>
     
     <div id="overview" class="tab-content active">
@@ -168,7 +155,7 @@
         
         <div class="owasp-badge-container">
           <div class="owasp-badge" data-category="A01:2021">A01: Broken Access Control</div>
-          <div class="owasp-badge" data-category="3">A02: Cryptographic Failures</div>
+          <div class="owasp-badge" data-category="A02:2021">A02: Cryptographic Failures</div>
           <div class="owasp-badge" data-category="A03:2021">A03: Injection</div>
           <div class="owasp-badge" data-category="A04:2021">A04: Insecure Design</div>
           <div class="owasp-badge" data-category="A05:2021">A05: Security Misconfiguration</div>
@@ -413,35 +400,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
-    // Login Logic
-    document.getElementById('login-button').addEventListener('click', function() {
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      const errorMessage = document.getElementById('login-error');
-
-      // Simple client-side authentication (replace with server-side in production)
-      if (username === 'admin' && password === 'password') {
-        // Hide login container and show dashboard
-        document.getElementById('login-container').style.display = 'none';
-        document.getElementById('dashboard-container').style.display = 'block';
-        errorMessage.style.display = 'none';
-      } else {
-        // Show error message
-        errorMessage.style.display = 'block';
-      }
-    });
-
-    // Allow Enter key to trigger login
-    document.getElementById('password').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        document.getElementById('login-button').click();
-      }
-    });
-
-    // Existing script.js content should be included here or remain in script.js
-    // For example, tab switching, chart initialization, etc.
-    // If script.js is handling other dashboard functionality, ensure it only runs after login
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
