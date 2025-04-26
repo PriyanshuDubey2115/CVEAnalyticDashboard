@@ -13,7 +13,28 @@
     </video>
   </div>
   
-  <div class="dashboard-container">
+  <!-- Login Container -->
+  <div id="login-container" class="login-container">
+    <div class="login-box">
+      <img src="cvelogin.png" alt="Company Logo" class="login-logo">
+
+      <h2>Vulnerability Dashboard Login</h2>
+      <div class="login-form">
+        <label for="username">Username:</label>
+        <input type="text" id="username" placeholder="Enter username" required>
+        <label for="password">Password:</label>
+        <input type="password" id="password" placeholder="Enter password" required>
+        <button id="login-button" class="login-button">Login</button>
+        <p id="login-error" class="error-message" style="display: none;">Invalid username or password</p>
+        <footer class="login-footer">
+          <p>&copy; 2025 xAI. All rights reserved.</p>
+        </footer>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Dashboard Container (Removed duplicate OWASP Top 10 tab) -->
+  <div id="dashboard-container" class="dashboard-container" style="display: none;">
     <div class="dashboard-header">
       <h1>Vulnerability Scan Dashboard <img src="cve.png" alt="Logo" class="header-logo"></h1>
       
@@ -41,6 +62,7 @@
       </div>
       <div class="export-buttons">
         <button id="export-pdf" class="export-button">Export to PDF</button>
+        <button id="logout-button" class="export-button">Logout</button>
       </div>
       <div class="file-upload">
         <label for="file-upload-input">Upload Scan Results (.txt):</label>
@@ -55,7 +77,6 @@
       <button class="tab-button" data-tab="details">Detail Table</button>
       <button class="tab-button" data-tab="cve-details">CVE Description</button>
       <button class="tab-button" data-tab="dread">DREAD Model</button>
-      <button class="tab-button" data-tab="owasp">OWASP Top 10</button>
     </div>
     
     <div id="overview" class="tab-content active">
