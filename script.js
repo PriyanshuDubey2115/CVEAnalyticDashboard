@@ -1424,4 +1424,59 @@ function initChartsOnLoad() {
   initializeUrlChart('url-chart', initialData);
   initializeDreadChart('dread-chart', initialData);
 }
-
+document.addEventListener('DOMContentLoaded', () => {
+    // Login Functionality
+    const loginContainer = document.getElementById('login-container');
+    const dashboardContainer = document.getElementById('dashboard-container');
+    const loginButton = document.getElementById('login-button');
+    const logoutButton = document.getElementById('logout-button');
+    const loginError = document.getElementById('login-error');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+  
+    // Simple client-side credentials (for demo purposes)
+    const validCredentials = {
+      username: 'admin',
+      password: 'password123'
+    };
+  
+    loginButton.addEventListener('click', () => {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value.trim();
+  
+      if (username === validCredentials.username && password === validCredentials.password) {
+        loginContainer.style.display = 'none';
+        dashboardContainer.style.display = 'block';
+        loginError.style.display = 'none';
+        // Ensure the body is scrollable after login
+        document.body.style.overflow = 'auto';
+        // Scroll to the top of the dashboard
+        window.scrollTo(0, 0);
+      } else {
+        loginError.style.display = 'block';
+        usernameInput.value = '';
+        passwordInput.value = '';
+      }
+    });
+  
+    // Handle Enter key press for login
+    usernameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loginButton.click();
+    });
+    passwordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loginButton.click();
+    });
+  
+    // Logout Functionality
+    logoutButton.addEventListener('click', () => {
+      dashboardContainer.style.display = 'none';
+      loginContainer.style.display = 'flex';
+      usernameInput.value = '';
+      passwordInput.value = '';
+      loginError.style.display = 'none';
+      // Reset body overflow for login page
+      document.body.style.overflow = 'auto';
+      // Scroll to top of login page
+      window.scrollTo(0, 0);
+    });
+  });
