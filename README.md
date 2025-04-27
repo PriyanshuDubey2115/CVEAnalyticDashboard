@@ -4,6 +4,8 @@
 
 A modern, responsive dashboard for visualizing website vulnerability scan results, integrated with CVE details from the NVD API, OWASP references, and DREAD risk assessment. The dashboard provides an interactive interface to analyze vulnerabilities, view charts, and export reports.
 
+[Live Demo](https://vedanshpundir.github.io/CVEAnalyticDashboard/)
+
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
@@ -12,7 +14,6 @@ A modern, responsive dashboard for visualizing website vulnerability scan result
 - [Usage](#usage)
 - [Screenshots](#screenshots)
 - [Contributing](#contributing)
-- [License](#license)
 - [Contact](#contact)
 
 ## Overview
@@ -86,4 +87,25 @@ Follow these steps to set up the project locally:
 ## Screenshots
 1. **Login Page**
    ![login page](login.png)
-   
+
+2. **Dashboard**
+   ![dash](dash1.png)
+   ![dash2](dash2.png)
+
+   ## Contributing
+
+Contributions are welcome! Follow these steps to contribute:
+
+1. **Fork** the repository.
+
+2. **Create a new branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+## Contact
+
+For questions, suggestions, or feedback, reach out to:
+
+- 📧 **Email**: [vedanshpundir43@gmail.com](mailto:vedanshpundir43@gmail.com)
+- 🧑‍💻 **GitHub**: [https://github.com/VedanshPundir](https://github.com/VedanshPundir)
+
+
