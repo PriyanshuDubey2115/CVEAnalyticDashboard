@@ -6,7 +6,7 @@ A modern, responsive dashboard for visualizing website vulnerability scan result
 
 [Live Demo](https://vedanshpundir.github.io/CVEAnalyticDashboard/)
 # Instruction
-To use the dashboard immediately without running the main code of CVEminor2.py you can use [vulnerability text file](
+To use the dashboard immediately without running the main code of CVEminor2.py you can use [vulnerability text file](vulnerabilities_summary.txt)
 
 ## Table of Contents
 - [Overview](#overview)
