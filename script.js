@@ -1,6 +1,4 @@
-if (!localStorage.getItem('authToken')) {
-    window.location.href = 'login.html';
-  }
+
   // Charts will be stored here to destroy when re-rendering
   let charts = {
       severityChart: null,
