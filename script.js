@@ -1344,68 +1344,114 @@
       alert('No data available to export.');
       return;
     }
-  
+
     console.log('Starting PDF export...'); // Debug log
-  
-    // Ensure charts are fully rendered
+
+    // Ensure content is fully rendered
     await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms for rendering
-  
+
     const { jsPDF } = window.jspdf;
     if (!jsPDF) {
       console.error('jsPDF is not loaded. Check your script tags.');
       alert('Error: PDF library not loaded. Please ensure jsPDF is included.');
       return;
     }
-  
-    const doc = new jsPDF();
+
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
     let yOffset = 10;
-  
-    // Capture and add chart snapshots
-    const charts = [
-      { id: 'severity-chart', title: 'Severity Distribution' },
-      { id: 'cvss-chart', title: 'CVSS Score Distribution' },
-      { id: 'vuln-type-chart', title: 'Vulnerabilities by Type' },
-      { id: 'url-chart', title: 'Vulnerabilities by URL' },
-      { id: 'dread-chart', title: 'DREAD Score Priority' }
-    ];
-  
-    for (const chart of charts) {
-      const canvas = document.getElementById(chart.id);
-      if (!canvas) {
-        console.warn(`Canvas for ${chart.id} not found`);
-        continue;
+    const pageWidth = 210; // A4 width in mm
+    const pageHeight = 297; // A4 height in mm
+    const margin = 20;
+    const contentWidth = pageWidth - 2 * margin;
+
+    // Helper function to add a new page if needed
+    const checkPageOverflow = (height) => {
+      if (yOffset + height > pageHeight - margin) {
+        doc.addPage();
+        yOffset = 10;
       }
+    };
+
+    // Helper function to capture and add an element to the PDF
+    const addElementToPDF = async (elementId, title) => {
+      const element = document.getElementById(elementId);
+      if (!element) {
+        console.warn(`Element for ${elementId} not found`);
+        return;
+      }
+
       try {
-        const image = await html2canvas(canvas, { scale: 2, useCORS: true }).then(canvas => canvas.toDataURL('image/png'));
-        if (!image) {
-          console.error(`Failed to capture image for ${chart.id}`);
-          continue;
-        }
-        doc.addImage(image, 'PNG', 20, yOffset, 170, 80);
-        doc.setFontSize(12);
-        doc.text(chart.title, 20, yOffset - 5);
-        yOffset += 90;
-  
-        if (yOffset > 270) {
-          doc.addPage();
-          yOffset = 10;
-        }
+        // Temporarily make the element visible to capture it
+        const originalDisplay = element.style.display;
+        element.style.display = 'block';
+
+        const canvas = await html2canvas(element, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: null, // Preserve transparency
+          logging: false
+        });
+        const image = canvas.toDataURL('image/png');
+        const imgProps = doc.getImageProperties(image);
+        const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
+
+        // Check if the image fits on the current page
+        checkPageOverflow(imgHeight + 15); // +15 for title and spacing
+
+        // Add title
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text(title, margin, yOffset);
+        yOffset += 10;
+
+        // Add image
+        doc.addImage(image, 'PNG', margin, yOffset, contentWidth, imgHeight);
+        yOffset += imgHeight + 10;
+
+        // Restore original display state
+        element.style.display = originalDisplay;
       } catch (error) {
-        console.error(`Error capturing ${chart.id}:`, error);
+        console.error(`Error capturing ${elementId}:`, error);
       }
+    };
+
+    // Capture all sections
+    const sections = [
+      { id: 'overview', title: 'Overview' },
+      { id: 'vulnerabilities', title: 'Vulnerabilities by Type' },
+      { id: 'urls', title: 'URLs' },
+      { id: 'details', title: 'Detail Table' },
+      { id: 'cve-details', title: 'CVE Description' },
+      { id: 'dread', title: 'DREAD Model' },
+      { id: 'owasp', title: 'OWASP Top 10' }
+    ];
+
+    for (const section of sections) {
+      await addElementToPDF(section.id, section.title);
     }
-  
-    // Add brief conclusion
-    yOffset += 10;
+
+    // Add Conclusion
+    checkPageOverflow(40); // Approximate height for conclusion text
     doc.setFontSize(14);
-    doc.text('Conclusion', 20, yOffset);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Conclusion', margin, yOffset);
     yOffset += 10;
+
     doc.setFontSize(10);
     const total = vulnData.length;
     const high = vulnData.filter(v => v.severity.toUpperCase() === 'HIGH').length;
     const medium = vulnData.filter(v => v.severity.toUpperCase() === 'MEDIUM').length;
     const low = vulnData.filter(v => v.severity.toUpperCase() === 'LOW').length;
-    doc.text(`The scan identified ${total} vulnerabilities, with ${high} high-severity, ${medium} medium-severity, and ${low} low-severity issues. Immediate attention is recommended for high-severity vulnerabilities to mitigate potential risks.`, 20, yOffset);
+
+    const conclusionText = `The scan identified ${total} vulnerabilities, with ${high} high-severity, ${medium} medium-severity, and ${low} low-severity issues. Immediate attention is recommended for high-severity vulnerabilities to mitigate potential risks.`;
+    const textLines = doc.splitTextToSize(conclusionText, contentWidth);
+    doc.text(textLines, margin, yOffset);
+    yOffset += textLines.length * 5 + 10;
+
     console.log('PDF export completed');
     doc.save('Vulnerability_Scan_Report.pdf');
   });
