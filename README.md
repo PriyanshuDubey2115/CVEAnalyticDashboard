@@ -65,5 +65,25 @@ Follow these steps to set up the project locally:
 ### Steps
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/vulnerability-scanner-dashboard.git
-   cd vulnerability-scanner-dashboard
+   git clone https://github.com/VedanshPundir/CVEAnalyticDashboard.git
+   cd CVEAnalyticDashboard
+
+## Usage
+
+1. **Run the Application**:
+   - Open the dashboard in your browser.
+   - Alternatively, open `index.html` directly if using static files.
+
+2. **Login**:
+   - Navigate to the login page, enter your credentials, and access the dashboard.
+   - Default credentials (update as needed):
+     - Username: `admin`
+     - Password: `password123`
+
+3. **Upload Scan Results**:
+   - Use the file upload section to upload a text file containing vulnerability scan results (e.g., `vulnerabilities_data.txt`).
+  
+## Screenshots
+1. **Login Page**
+   ![login page](login.png)
+   
