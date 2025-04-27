@@ -17,7 +17,7 @@ A modern, responsive dashboard for visualizing website vulnerability scan result
 
 ## Overview
 
-This project is a **Website Vulnerability Scanner Dashboard** designed to help security professionals and developers identify, analyze, and mitigate vulnerabilities in web applications. It processes scan results, fetches CVE details using the NVD API, and provides actionable insights through interactive charts, tables, and OWASP references. The dashboard also includes a login system, export functionality for reports, and a DREAD-based risk assessment section.
+This project is a **Website Vulnerability Analytic Dashboard** designed to help security professionals and developers identify, analyze, and mitigate vulnerabilities in web applications. It processes scan results, fetches CVE details using the NVD API, and provides actionable insights through interactive charts, tables, and OWASP references. The dashboard also includes a login system, export functionality for reports, and a DREAD-based risk assessment section.
 
 The interface is built with a modern, dark-themed design, featuring a background video for an immersive experience. It is fully responsive and optimized for both desktop and mobile devices.
 
@@ -48,7 +48,6 @@ The interface is built with a modern, dark-themed design, featuring a background
   - NVD API (for CVE details)
 - **Styling**:
   - Custom CSS with a dark theme
-  - Tailwind CSS (optional, if used)
 - **Other**:
   - GitHub for version control
   - Markdown for documentation
@@ -58,7 +57,7 @@ The interface is built with a modern, dark-themed design, featuring a background
 Follow these steps to set up the project locally:
 
 ### Prerequisites
-- Python 3.8+ (if backend is included)
+- Python 3.8+
 - Node.js (if using Chart.js or other JS dependencies)
 - Git
 - A valid NVD API key (sign up at [NVD](https://nvd.nist.gov/developers/request-an-api-key))
