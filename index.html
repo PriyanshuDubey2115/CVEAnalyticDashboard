@@ -9,39 +9,36 @@
 <body>
   <div class="video-background">
     <video autoplay muted loop playsinline>
-      <source src="wavy.mp4" type="video/mp4" />
+      <source src="wavy.mp4" type="video/mp4">
     </video>
   </div>
-  
+
   <!-- Login Container -->
   <div id="login-container" class="login-container">
     <div class="login-box">
       <img src="cvelogin.png" alt="Company Logo" class="login-logo">
-
       <h2>Vulnerability Dashboard Login</h2>
       <div class="login-form">
         <label for="username">Username:</label>
         <input type="text" id="username" placeholder="Enter username" required>
         <label for="password">Password:</label>
         <input type="password" id="password" placeholder="Enter password" required>
-        <button id="login-button" class="login-button">Login</button>
+        <button type="submit" id="login-button" class="login-button">Login</button>
         <p id="login-error" class="error-message" style="display: none;">Invalid username or password</p>
         <footer class="login-footer">
-          <p>&copy; 2025 xAI. All rights reserved.</p>
+          <p>© 2025 xAI. All rights reserved.</p>
         </footer>
       </div>
     </div>
   </div>
-  
-  <!-- Dashboard Container (Removed duplicate OWASP Top 10 tab) -->
+
+  <!-- Dashboard Container -->
   <div id="dashboard-container" class="dashboard-container" style="display: none;">
     <div class="dashboard-header">
       <h1>Vulnerability Scan Dashboard <img src="cve.png" alt="Logo" class="header-logo"></h1>
-      
       <div id="scan-info" class="scan-info" style="display: none;">
-        <span id="scan-date" style="color:black">Scan Date: Not available</span>
+        <span id="scan-date" style="color: black;">Scan Date: Not available</span>
       </div>
-      
       <div class="stats-container">
         <div class="stat-box">
           <span class="stat-label">Total Vulnerabilities:</span>
@@ -69,7 +66,7 @@
         <input id="file-upload-input" type="file" accept=".txt">
       </div>
     </div>
-    
+
     <div class="tab-container">
       <button class="tab-button active" data-tab="overview">Overview</button>
       <button class="tab-button" data-tab="vulnerabilities">Vulnerabilities by Type</button>
@@ -77,8 +74,9 @@
       <button class="tab-button" data-tab="details">Detail Table</button>
       <button class="tab-button" data-tab="cve-details">CVE Description</button>
       <button class="tab-button" data-tab="dread">DREAD Model</button>
+      <button class="tab-button" data-tab="owasp">OWASP Top 10</button>
     </div>
-    
+
     <div id="overview" class="tab-content active">
       <p class="section-description">This section provides an overview of vulnerability distribution based on severity and CVSS scores.</p>
       <div class="chart-container">
@@ -96,7 +94,7 @@
         </div>
       </div>
     </div>
-    
+
     <div id="vulnerabilities" class="tab-content">
       <div class="chart-box">
         <div class="chart-title">Vulnerabilities by Type</div>
@@ -105,7 +103,7 @@
         </div>
       </div>
     </div>
-    
+
     <div id="urls" class="tab-content">
       <div class="chart-box">
         <div class="chart-title">Vulnerabilities by URL</div>
@@ -114,7 +112,7 @@
         </div>
       </div>
     </div>
-    
+
     <div id="details" class="tab-content">
       <div class="table-container">
         <table id="vuln-table">
@@ -128,7 +126,7 @@
               <th>CVSS Score</th>
             </tr>
           </thead>
-          <tbody style="color: white;"></tbody>
+          <tbody></tbody>
         </table>
       </div>
     </div>
@@ -136,12 +134,12 @@
     <div id="cve-details" class="tab-content">
       <div class="chart-box">
         <div class="chart-title">CVE Descriptions and References</div>
-        <div class="cve-container" id="cveSection" style="color: white;">
+        <div class="cve-container" id="cveSection">
           <!-- Dynamic CVEs will appear here -->
         </div>
       </div>
     </div>
-    
+
     <div id="dread" class="tab-content">
       <div class="chart-box">
         <div class="chart-title">DREAD Score Priority</div>
@@ -164,7 +162,7 @@
               <th>Priority</th>
             </tr>
           </thead>
-          <tbody style="color: white;"></tbody>
+          <tbody></tbody>
         </table>
       </div>
     </div>
@@ -172,8 +170,7 @@
     <div id="owasp" class="tab-content">
       <div class="owasp-reference-section">
         <div class="owasp-reference-title">OWASP Top 10 (2021) - Quick Reference</div>
-        <p style="color: #d1fae5;">The OWASP Top 10 is a standard awareness document for developers and web application security. It represents a broad consensus about the most critical security risks to web applications.</p>
-        
+        <p>The OWASP Top 10 is a standard awareness document for developers and web application security. It represents a broad consensus about the most critical security risks to web applications.</p>
         <div class="owasp-badge-container">
           <div class="owasp-badge" data-category="A01:2021">A01: Broken Access Control</div>
           <div class="owasp-badge" data-category="A02:2021">A02: Cryptographic Failures</div>
@@ -187,9 +184,8 @@
           <div class="owasp-badge" data-category="A10:2021">A10: SSRF</div>
         </div>
       </div>
-    
       <div id="owasp-details" class="owasp-details-section">
-        <div class="owasp-details-title" style="color: white;">OWASP Top 10 - Detailed Explanations</div>
+        <div class="owasp-details-title">OWASP Top 10 - Detailed Explanations</div>
         <div class="accordion-item" data-category="A01:2021">
           <div class="accordion-header">
             A01:2021 - Broken Access Control
@@ -212,7 +208,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A02:2021">
           <div class="accordion-header">
             A02:2021 - Cryptographic Failures
@@ -235,7 +230,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A03:2021">
           <div class="accordion-header">
             A03:2021 - Injection
@@ -257,7 +251,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A04:2021">
           <div class="accordion-header">
             A04:2021 - Insecure Design
@@ -278,7 +271,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A05:2021">
           <div class="accordion-header">
             A05:2021 - Security Misconfiguration
@@ -301,7 +293,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A06:2021">
           <div class="accordion-header">
             A06:2021 - Vulnerable and Outdated Components
@@ -322,7 +313,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A07:2021">
           <div class="accordion-header">
             A07:2021 - Identification and Authentication Failures
@@ -347,7 +337,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A08:2021">
           <div class="accordion-header">
             A08:2021 - Software and Data Integrity Failures
@@ -369,7 +358,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A09:2021">
           <div class="accordion-header">
             A09:2021 - Security Logging and Monitoring Failures
@@ -392,7 +380,6 @@
             </div>
           </div>
         </div>
-        
         <div class="accordion-item" data-category="A10:2021">
           <div class="accordion-header">
             A10:2021 - Server-Side Request Forgery (SSRF)
