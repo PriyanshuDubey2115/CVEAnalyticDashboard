@@ -1658,3 +1658,13 @@
       </div>
     `;
   }
+
+function updateIframe() {
+    const urlInput = document.getElementById('iframe-url').value;
+    const iframe = document.getElementById('external-iframe');
+    if (urlInput.startsWith('http://') || urlInput.startsWith('https://')) {
+      iframe.src = urlInput;
+    } else {
+      alert('Please enter a valid URL starting with http:// or https://');
+    }
+  }
