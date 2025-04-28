@@ -1569,7 +1569,12 @@
                           `**Recommended Actions:**\n` +
                           `1. Check vendor advisories (links above)\n` +
                           `2. Apply patches if available\n` +
-                          `3. Isolate affected systems if exploit is public`;
+                          `3. Isolate affected systems if exploit is public`+
+                          `4. Monitor systems for unusual activity or indicators of compromise\n` +
+                          `5. Implement temporary workarounds (e.g., disable vulnerable features) if patches are unavailable\n` +
+                          `6. Update firewall rules or network configurations to limit exposure\n` +
+                          `7. Engage with your security team to assess risk and prioritize remediation`;
+                           
         }
       }
       
