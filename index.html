@@ -401,6 +401,19 @@
             </div>
           </div>
         </div>
+        <!-- AI-Powered Mitigation Suggestions -->
+        <div id="ai-mitigation-section">
+          <h3 style="color: white;">AI-Powered Mitigation Suggestions</h3>
+          <div class="input-form">
+            <input type="text" id="cve-id-input" placeholder="Enter CVE ID (e.g., CVE-2000-1233)" />
+            <input type="text" id="description-input" placeholder="Enter Vulnerability Description" />
+            <button id="add-vulnerability-btn">Get Mitigation Suggestions</button>
+          </div>
+          <div id="mitigation-results" class="mitigation-results">
+            <div class="loading-spinner" style="display: none;"></div>
+            <div id="mitigation-content"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
