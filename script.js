@@ -660,7 +660,7 @@
       // Fix: Ensure the OWASP tab can be selected
       const owaspTabButton = document.createElement("button");
       owaspTabButton.classList.add("tab-button");
-      owaspTabButton.textContent = "OWASP Top 10";
+      owaspTabButton.textContent = "OWASP Top 10 with AI Powered Mitigation";
       owaspTabButton.setAttribute("data-tab", "owasp");
       document.querySelector(".tab-container").appendChild(owaspTabButton);
       
