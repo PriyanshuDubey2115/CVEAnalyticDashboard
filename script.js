@@ -1528,3 +1528,128 @@
       window.scrollTo(0, 0);
     });
   });
+/////////////////////////////////
+  // Updated Hugging Face API configuration
+  const HF_API_KEY = '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'; // Replace with your actual API key
+  const HF_API_URL = 'https://api-inference.huggingface.co/models/';
+  const NVD_API_URL = 'https://services.nvd.nist.gov/rest/json/cves/2.0';
+  
+  const SECURITY_MODEL = 'gpt2';
+  
+  document.getElementById('add-vulnerability-btn').addEventListener('click', async function() {
+    const cveId = document.getElementById('cve-id-input').value.trim();
+    const description = document.getElementById('description-input').value.trim();
+    
+    if (!cveId && !description) {
+      alert('Please enter either a CVE ID or a vulnerability description');
+      return;
+    }
+    
+    const loadingSpinner = document.querySelector('.loading-spinner');
+    const mitigationContent = document.getElementById('mitigation-content');
+    
+    loadingSpinner.style.display = 'block';
+    mitigationContent.innerHTML = '';
+    
+    try {
+      let mitigationText;
+      
+      // If CVE ID is provided, fetch from NVD first
+      if (cveId) {
+        const nvdData = await fetchNVDData(cveId);
+        
+        if (nvdData && nvdData.vulnerabilities && nvdData.vulnerabilities[0]) {
+          const cveItem = nvdData.vulnerabilities[0].cve;
+          const description = cveItem.descriptions[0].value;
+          const references = cveItem.references.map(ref => ref.url).join('\n');
+          
+          mitigationText = `**Mitigation for ${cveId} (From NVD)**\n\n` +
+                          `**Description:** ${description}\n\n` +
+                          `**References:**\n${references}\n\n` +
+                          `**Recommended Actions:**\n` +
+                          `1. Check vendor advisories (links above)\n` +
+                          `2. Apply patches if available\n` +
+                          `3. Isolate affected systems if exploit is public`;
+        }
+      }
+      
+      // If NVD didn't provide enough info, use Hugging Face
+      if (!mitigationText) {
+        mitigationText = await generateMitigationWithHF(cveId, description);
+      }
+      
+      displayMitigationResults(cveId || 'Custom Vulnerability', mitigationText);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      mitigationContent.innerHTML = `
+        <p class="error">Error: ${error.message}</p>
+        <p>Possible fixes:</p>
+        <ul>
+          <li>Check API keys</li>
+          <li>Verify CVE ID format (e.g., CVE-2021-44228)</li>
+          <li>Try again later (NVD/HF may be down)</li>
+        </ul>
+      `;
+    } finally {
+      loadingSpinner.style.display = 'none';
+    }
+  });
+  
+  // Fetch CVE data from NVD
+  async function fetchNVDData(cveId) {
+    const response = await fetch(`${NVD_API_URL}?cveId=${cveId}`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`NVD API failed: ${response.status}`);
+    }
+    
+    return await response.json();
+  }
+  
+  // Generate mitigations using Hugging Face (fallback)
+  async function generateMitigationWithHF(cveId, description) {
+    const prompt = cveId 
+      ? `Provide mitigation steps for ${cveId} based on NVD data. Include patches, workarounds, and vendor links.`
+      : `As a cybersecurity expert, suggest mitigations for: "${description}". Include:
+          1. Immediate actions
+          2. Long-term fixes
+          3. Configuration changes`;
+    
+    const response = await fetch(`${HF_API_URL}${SECURITY_MODEL}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HF_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: prompt,
+        parameters: { max_new_tokens: 500 }
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('HF API request failed');
+    }
+    
+    const data = await response.json();
+    return data[0]?.generated_text || 'No mitigation suggestions generated.';
+  }
+  
+  // Display results (same as before)
+  function displayMitigationResults(title, content) {
+    const mitigationContent = document.getElementById('mitigation-content');
+    
+    let cleanContent = content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold text
+      .replace(/\n/g, '<br>');
+    
+    mitigationContent.innerHTML = `
+      <div class="ai-suggestion">
+        <h4>Mitigation for ${title}</h4>
+        <div class="suggestion-content">${cleanContent}</div>
+      </div>
+    `;
+  }
