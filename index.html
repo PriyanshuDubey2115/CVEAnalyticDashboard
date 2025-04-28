@@ -75,6 +75,8 @@
       <button class="tab-button" data-tab="details">Detail Table</button>
       <button class="tab-button" data-tab="cve-details">CVE Description</button>
       <button class="tab-button" data-tab="dread">DREAD Model</button>
+      <button class="tab-button" data-tab="external-website">Live Threat Map</button>
+
     </div>
 
     <div id="overview" class="tab-content active">
@@ -415,6 +417,12 @@
           </div>
         </div>
       </div>
+    </div>
+    <div class="iframe-container">
+      <p style="color: #d1fae5;">The section showcases the real time threats and attacks happening globally.</p>
+      <input type="text" id="iframe-url" placeholder="Enter website URL (e.g., https://threatmap.checkpoint.com/)">
+      <button onclick="updateIframe()">Load URL</button>
+      <iframe id="external-iframe" src="https://livethreatmap.radware.com/" frameborder="0"></iframe>
     </div>
   </div>
 
