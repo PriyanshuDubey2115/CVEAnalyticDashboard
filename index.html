@@ -418,11 +418,16 @@
         </div>
       </div>
     </div>
-    <div class="iframe-container">
-      <p style="color: #d1fae5;">The section showcases the real time threats and attacks happening globally.</p>
-      <input type="text" id="iframe-url" placeholder="Enter website URL (e.g., https://threatmap.checkpoint.com/)">
-      <button onclick="updateIframe()">Load URL</button>
-      <iframe id="external-iframe" src="https://livethreatmap.radware.com/" frameborder="0"></iframe>
+    <!-- Live Threat Map Tab Content -->
+    <div id="external-website" class="tab-content">
+      <div class="iframe-container">
+        <p style="color: #d1fae5;">This section showcases real-time threats and attacks happening globally.</p>
+        <div class="iframe-controls">
+          <input type="text" id="iframe-url" placeholder="Enter website URL (e.g., https://threatmap.checkpoint.com/)" value="https://livethreatmap.radware.com/">
+          <button onclick="updateIframe()">Load URL</button>
+        </div>
+        <iframe id="external-iframe" src="https://livethreatmap.radware.com/" frameborder="0"></iframe>
+      </div>
     </div>
   </div>
 
