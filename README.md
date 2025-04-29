@@ -110,4 +110,9 @@ For questions, suggestions, or feedback, reach out to:
 - 📧 **Email**: [vedanshpundir43@gmail.com](mailto:vedanshpundir43@gmail.com)
 - 🧑‍💻 **GitHub**: [https://github.com/VedanshPundir](https://github.com/VedanshPundir)
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+  
+
 
