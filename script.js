@@ -1338,121 +1338,101 @@
     document.getElementById('scan-info').style.display = 'block';
   }
   
-  // Add event listener for export button
-  document.getElementById('export-pdf').addEventListener('click', async () => {
+ document.getElementById('export-pdf').addEventListener('click', async () => {
     if (!vulnData.length) {
       alert('No data available to export.');
       return;
     }
-
-    console.log('Starting PDF export...'); // Debug log
-
-    // Ensure content is fully rendered
-    await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms for rendering
-
-    const { jsPDF } = window.jspdf;
-    if (!jsPDF) {
-      console.error('jsPDF is not loaded. Check your script tags.');
-      alert('Error: PDF library not loaded. Please ensure jsPDF is included.');
-      return;
+  
+    // 1. Force render all charts first
+    const chartsToRender = [
+      'severity-chart', 'cvss-chart', 'vuln-type-chart', 
+      'url-chart', 'dread-chart'
+    ];
+    
+    // Render each chart and wait briefly between them
+    for (const chartId of chartsToRender) {
+      const chartInstance = Chart.getChart(chartId);
+      if (chartInstance) {
+        chartInstance.render();
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
     }
-
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
+  
+    // 2. Temporarily hide video background and adjust z-indexes
+    const videoBg = document.querySelector('.video-background');
+    const originalVideoDisplay = videoBg.style.display;
+    videoBg.style.display = 'none';
+  
+    // 3. Show all tabs temporarily to capture their content
+    const allTabs = document.querySelectorAll('.tab-content');
+    const originalTabDisplays = [];
+    allTabs.forEach(tab => {
+      originalTabDisplays.push(tab.style.display);
+      tab.style.display = 'block';
     });
+  
+    // 4. Create PDF with proper delays
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
     let yOffset = 10;
-    const pageWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
-    const margin = 20;
-    const contentWidth = pageWidth - 2 * margin;
-
-    // Helper function to add a new page if needed
-    const checkPageOverflow = (height) => {
-      if (yOffset + height > pageHeight - margin) {
-        doc.addPage();
-        yOffset = 10;
-      }
-    };
-
-    // Helper function to capture and add an element to the PDF
-    const addElementToPDF = async (elementId, title) => {
-      const element = document.getElementById(elementId);
-      if (!element) {
-        console.warn(`Element for ${elementId} not found`);
-        return;
-      }
-
+  
+    // Capture charts with proper delays
+    const charts = [
+      { id: 'severity-chart', title: 'Severity Distribution' },
+      { id: 'cvss-chart', title: 'CVSS Score Distribution' },
+      { id: 'vuln-type-chart', title: 'Vulnerabilities by Type' },
+      { id: 'url-chart', title: 'Vulnerabilities by URL' },
+      { id: 'dread-chart', title: 'DREAD Score Priority' }
+    ];
+  
+    for (const chart of charts) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const canvas = document.getElementById(chart.id);
+      if (!canvas) continue;
+  
       try {
-        // Temporarily make the element visible to capture it
-        const originalDisplay = element.style.display;
-        element.style.display = 'block';
-
-        const canvas = await html2canvas(element, {
+        const image = await html2canvas(canvas, { 
           scale: 2,
           useCORS: true,
-          backgroundColor: null, // Preserve transparency
-          logging: false
-        });
-        const image = canvas.toDataURL('image/png');
-        const imgProps = doc.getImageProperties(image);
-        const imgHeight = (imgProps.height * contentWidth) / imgProps.width;
-
-        // Check if the image fits on the current page
-        checkPageOverflow(imgHeight + 15); // +15 for title and spacing
-
-        // Add title
-        doc.setFontSize(14);
-        doc.setTextColor(0, 0, 0);
-        doc.text(title, margin, yOffset);
-        yOffset += 10;
-
-        // Add image
-        doc.addImage(image, 'PNG', margin, yOffset, contentWidth, imgHeight);
-        yOffset += imgHeight + 10;
-
-        // Restore original display state
-        element.style.display = originalDisplay;
+          allowTaint: true,
+          logging: true,
+          backgroundColor: '#ffffff'
+        }).then(canvas => canvas.toDataURL('image/png'));
+        
+        doc.addImage(image, 'PNG', 20, yOffset, 170, 80);
+        doc.setFontSize(12);
+        doc.text(chart.title, 20, yOffset - 5);
+        yOffset += 90;
+  
+        if (yOffset > 270) {
+          doc.addPage();
+          yOffset = 10;
+        }
       } catch (error) {
-        console.error(`Error capturing ${elementId}:`, error);
+        console.error(`Error capturing ${chart.id}:`, error);
       }
-    };
-
-    // Capture all sections
-    const sections = [
-      { id: 'overview', title: 'Overview' },
-      { id: 'vulnerabilities', title: 'Vulnerabilities by Type' },
-      { id: 'urls', title: 'URLs' },
-      { id: 'details', title: 'Detail Table' },
-      { id: 'cve-details', title: 'CVE Description' },
-      { id: 'dread', title: 'DREAD Model' },
-      { id: 'owasp', title: 'OWASP Top 10' }
-    ];
-
-    for (const section of sections) {
-      await addElementToPDF(section.id, section.title);
     }
-
-    // Add Conclusion
-    checkPageOverflow(40); // Approximate height for conclusion text
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.text('Conclusion', margin, yOffset);
+  
+    // Add conclusion
     yOffset += 10;
-
+    doc.setFontSize(14);
+    doc.text('Conclusion', 20, yOffset);
+    yOffset += 10;
     doc.setFontSize(10);
     const total = vulnData.length;
     const high = vulnData.filter(v => v.severity.toUpperCase() === 'HIGH').length;
     const medium = vulnData.filter(v => v.severity.toUpperCase() === 'MEDIUM').length;
     const low = vulnData.filter(v => v.severity.toUpperCase() === 'LOW').length;
-
-    const conclusionText = `The scan identified ${total} vulnerabilities, with ${high} high-severity, ${medium} medium-severity, and ${low} low-severity issues. Immediate attention is recommended for high-severity vulnerabilities to mitigate potential risks.`;
-    const textLines = doc.splitTextToSize(conclusionText, contentWidth);
-    doc.text(textLines, margin, yOffset);
-    yOffset += textLines.length * 5 + 10;
-
-    console.log('PDF export completed');
+    doc.text(`The scan identified ${total} vulnerabilities, with ${high} high-severity, ${medium} medium-severity, and ${low} low-severity issues.`, 20, yOffset);
+    
+    // Restore original UI state
+    videoBg.style.display = originalVideoDisplay;
+    allTabs.forEach((tab, i) => {
+      tab.style.display = originalTabDisplays[i];
+    });
+  
     doc.save('Vulnerability_Scan_Report.pdf');
   });
   
