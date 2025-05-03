@@ -415,8 +415,8 @@ def send_email_report(vulnerabilities_summary, recipient_email: str):
 
         smtp_server = 'smtp.gmail.com'
         smtp_port = 587
-        username = 'pundirved09@gmail.com'
-        password = 'pnmaayexiejdikhr'  
+        username = ''
+        password = ''  
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()  # Secure the connection
             server.login(username, password)
