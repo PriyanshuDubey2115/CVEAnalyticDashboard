@@ -2,7 +2,6 @@ import requests
 import re
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
-import webbrowser
 from tabulate import tabulate
 from colorama import Fore, Style, init
 from fpdf import FPDF
@@ -21,16 +20,15 @@ import json
 import time
 import os
 import json
-import threading
 import webbrowser
-from flask import Flask, render_template, jsonify
-import mysql.connector
-from datetime import datetime
 from datetime import datetime
 from tabulate import tabulate
-import mysql.connector
-from mysql.connector import Error
 from colorama import Fore, Style
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, quote
+
 
 @dataclass
 class CVEDetails:
@@ -43,35 +41,24 @@ class CVEDetails:
 
 
 class NVDApiClient:
-    def _init_(self, api_key: str):
+    def __init__(self, api_key: str):
+
         self.api_key = api_key
         self.base_url = "https://services.nvd.nist.gov/rest/json/cves/2.0"
         self.headers = {
-            "apiKey": api_key
+            "X-Api-Key": api_key,
+            "User-Agent": "Mozilla/5.0 (compatible; VulnerabilityScanner/1.0)"
         }
-        # Rate limiting to avoid API throttling
-        self.request_delay = 6  # seconds between requests
-
+        self.request_delay = 6  
     def get_cve_details(self, keyword: str, max_results: int = 5) -> List[CVEDetails]:
-        """
-        Query the NVD API for CVEs related to a specific keyword.
         
-        Args:
-            keyword: Search term for vulnerabilities
-            max_results: Maximum number of results to return
-            
-        Returns:
-            List of CVEDetails objects
-        """
         try:
-            # Fixed the API endpoint - don't append CVE to the URL
-            # Using the keywordSearch parameter correctly
+            
             params = {
                 "keywordSearch": keyword,
                 "resultsPerPage": max_results
             }
             
-            # Add delay to avoid rate limiting
             time.sleep(self.request_delay)
             
             response = requests.get(
@@ -81,7 +68,6 @@ class NVDApiClient:
                 timeout=30
             )
             
-            # Check for rate limiting or other errors
             if response.status_code == 403:
                 print(f"API rate limit exceeded or authentication error: {response.text}")
                 return []
@@ -89,35 +75,29 @@ class NVDApiClient:
             response.raise_for_status()
             data = response.json()
             
-            # Debug information - optional
             print(f"Found {len(data.get('vulnerabilities', []))} CVEs matching '{keyword}'")
             
             cve_list = []
             for vuln in data.get("vulnerabilities", []):
                 cve = vuln.get("cve", {})
                 
-                # Handle both CVSS v3.1 and v3.0 metrics
                 cvss_score = 0.0
                 severity = "UNKNOWN"
                 
-                # Try CVSS 3.1 first
                 if cve.get("metrics", {}).get("cvssMetricV31"):
                     metrics = cve.get("metrics", {}).get("cvssMetricV31", [{}])[0]
                     cvss_data = metrics.get("cvssData", {})
                     cvss_score = float(cvss_data.get("baseScore", 0.0))
                     severity = cvss_data.get("baseSeverity", "UNKNOWN")
-                # Fall back to CVSS 3.0
                 elif cve.get("metrics", {}).get("cvssMetricV30"):
                     metrics = cve.get("metrics", {}).get("cvssMetricV30", [{}])[0]
                     cvss_data = metrics.get("cvssData", {})
                     cvss_score = float(cvss_data.get("baseScore", 0.0))
                     severity = cvss_data.get("baseSeverity", "UNKNOWN")
-                # Fall back to CVSS 2.0
                 elif cve.get("metrics", {}).get("cvssMetricV2"):
                     metrics = cve.get("metrics", {}).get("cvssMetricV2", [{}])[0]
                     cvss_data = metrics.get("cvssData", {})
                     cvss_score = float(cvss_data.get("baseScore", 0.0))
-                    # Map CVSS 2.0 score to severity
                     if cvss_score >= 7.0:
                         severity = "HIGH"
                     elif cvss_score >= 4.0:
@@ -125,14 +105,12 @@ class NVDApiClient:
                     else:
                         severity = "LOW"
                 
-                # Get the English description when available
                 description = "No description available"
                 for desc in cve.get("descriptions", []):
                     if desc.get("lang") == "en":
                         description = desc.get("value", "No description available")
                         break
                 
-                # Create CVE details object
                 cve_details = CVEDetails(
                     cve_id=cve.get("id", "Unknown"),
                     description=description,
@@ -157,7 +135,6 @@ class NVDApiClient:
 
 
 def get_vulnerability_cves(vulnerability_type: str, nvd_client: NVDApiClient) -> List[CVEDetails]:
-    """Get relevant CVEs for a specific vulnerability type."""
     keyword_mapping = {
         "SQL injection vulnerability": "SQL injection",
         "Cross-site scripting (XSS) vulnerability": "cross-site scripting",
@@ -175,7 +152,7 @@ def get_vulnerability_cves(vulnerability_type: str, nvd_client: NVDApiClient) ->
 
 
 class OutputLogger:
-    def _init_(self, filename):
+    def __init__(self, filename):
         self.terminal = sys.stdout
         self.filename = filename
         self.log_file = None
@@ -210,15 +187,11 @@ def capture_output(filename):
         logger.stop()
 
 
-def scan_website(url, api_key: str):
-    """
-    Discover URLs and scan each for potential vulnerabilities, including CVE details.
-    """
+def scan_website(url, api_key: str, recipient_email: str):
+    
     try:
-        # Initialize NVD API client with rate limiting
         nvd_client = NVDApiClient(api_key)
         
-        # Discover URLs from the target website
         print(f"Discovering URLs on {url}...")
         discovered_urls = discover_urls(url)
         print(f"Discovered {len(discovered_urls)} URLs on {url}:\n")
@@ -227,7 +200,6 @@ def scan_website(url, api_key: str):
 
         vulnerabilities_summary = []
 
-        # Scan each discovered URL for vulnerabilities
         for page_url in discovered_urls:
             print(f"\nScanning {page_url}...")
             vulnerabilities = scan_url(page_url)
@@ -239,13 +211,11 @@ def scan_website(url, api_key: str):
                     print(f"\n{Fore.YELLOW}Vulnerability: {vulnerability}{Style.RESET_ALL}")
                     print(f"Attack Method: {attack_method}")
                     
-                    # Get and display CVE details
                     cve_details = get_vulnerability_cves(vulnerability, nvd_client)
                     
                     if cve_details:
                         print(f"\n{Fore.CYAN}Related CVEs:{Style.RESET_ALL}")
                         for cve in cve_details:
-                            # Color-code severity
                             severity_color = Fore.GREEN
                             if cve.severity == "HIGH" or cve.severity == "CRITICAL":
                                 severity_color = Fore.RED
@@ -263,10 +233,6 @@ def scan_website(url, api_key: str):
                                 for ref in cve.references[:3]:  # Limit to 3 references
                                     print(f"- {ref}")
 
-                    # Add to summary with extended CVE information.
-                    # Ensure that each entry has nine elements corresponding to:
-                    # "Page URL", "Vulnerability", "Attack Method", "CVE ID",
-                    # "Severity", "CVSS Score", "Published Date", "Description", "References"
                     summary_entry = [
                         page_url,
                         vulnerability,
@@ -282,12 +248,12 @@ def scan_website(url, api_key: str):
             else:
                 print(f"{Fore.GREEN}No vulnerabilities found on {page_url}{Style.RESET_ALL}")
 
-        # Generate reports if vulnerabilities were found
         if vulnerabilities_summary:
             save_vulnerabilities_to_document(vulnerabilities_summary)
             generate_pdf_report(vulnerabilities_summary)
-            send_email_report(vulnerabilities_summary)
-            save_vulnerabilities_to_json(vulnerabilities_summary)  # Add this line
+            if recipient_email:
+                send_email_report(vulnerabilities_summary, recipient_email)
+            save_vulnerabilities_to_json(vulnerabilities_summary)
         else:
             print(f"\n{Fore.GREEN}No vulnerabilities found on any of the URLs.{Style.RESET_ALL}")
 
@@ -296,13 +262,28 @@ def scan_website(url, api_key: str):
         import traceback
         traceback.print_exc()
 
+        
+def open_dashboard():
+    dashboard_url = "https://vedanshpundir.github.io/CVEAnalyticDashboard/"
+    print(f"{Fore.CYAN}Attempting to open dashboard URL: {dashboard_url}{Style.RESET_ALL}")
+    try:
+        response = requests.head(dashboard_url, timeout=10)
+        if response.status_code == 200:
+            print(f"{Fore.GREEN}Dashboard URL is accessible (HTTP 200){Style.RESET_ALL}")
+        else:
+            print(f"{Fore.YELLOW}Dashboard URL returned HTTP {response.status_code}{Style.RESET_ALL}")
+        
+        webbrowser.open_new_tab(dashboard_url)
+        print(f"{Fore.GREEN}Command to open dashboard sent successfully{Style.RESET_ALL}")
+    except requests.RequestException as e:
+        print(f"{Fore.RED}Failed to verify dashboard URL: {e}{Style.RESET_ALL}")
+    except Exception as e:
+        print(f"{Fore.RED}Failed to open dashboard: {e}{Style.RESET_ALL}")
+    finally:
+        print(f"{Fore.CYAN}If the dashboard did not open, try manually visiting: {dashboard_url}{Style.RESET_ALL}")
 
 def save_vulnerabilities_to_document(vulnerabilities_summary):
-    """
-    Save the vulnerabilities summary to a text document as a table,
-    including extended CVE details: Published Date, Description, and References.
-    Also save to MySQL database (not implemented here).
-    """
+    
     headers = [
         "Page URL", "Vulnerability", "Attack Method", "CVE ID",
         "Severity", "CVSS Score", "Published Date", "Description", "References"
@@ -319,15 +300,12 @@ def save_vulnerabilities_to_document(vulnerabilities_summary):
         file.write("\n\nReport generated successfully!")
 
     print(f"\n{Fore.GREEN}Vulnerabilities summary saved to {filename}{Style.RESET_ALL}")
-    # Save to MySQL database as well
+    
 
-# Add this function to your existing code
 
 
 def save_vulnerabilities_to_json(vulnerabilities_summary):
-    """
-    Save the vulnerabilities summary to a JSON file for the dashboard.
-    """
+    
     json_data = []
     for i, row in enumerate(vulnerabilities_summary):
         json_data.append({
@@ -348,9 +326,7 @@ def save_vulnerabilities_to_json(vulnerabilities_summary):
     
 
 def generate_pdf_report(vulnerabilities_summary):
-    """
-    Generate a PDF report of the vulnerabilities found.
-    """
+    
     try:
         pdf = FPDF()
         pdf.add_page()
@@ -360,29 +336,24 @@ def generate_pdf_report(vulnerabilities_summary):
         pdf.cell(0, 10, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 0, 1, 'C')
         pdf.ln(10)
 
-        # Add table headers
         pdf.set_font('Arial', 'B', 12)
         pdf.cell(60, 10, 'Vulnerability', 1, 0, 'C')
         pdf.cell(60, 10, 'CVE ID', 1, 0, 'C')
         pdf.cell(30, 10, 'Severity', 1, 0, 'C')
         pdf.cell(30, 10, 'CVSS Score', 1, 1, 'C')
 
-        # Add table data
         pdf.set_font('Arial', '', 10)
         for row in vulnerabilities_summary:
-            # Print URL as a section header
             pdf.ln(5)
             pdf.set_font('Arial', 'B', 11)
             pdf.cell(0, 10, f"URL: {row[0]}", 0, 1)
             pdf.set_font('Arial', '', 10)
             
-            # Print vulnerability details
             pdf.cell(60, 10, row[1], 1, 0)
             pdf.cell(60, 10, row[3], 1, 0)
             pdf.cell(30, 10, row[4], 1, 0)
             pdf.cell(30, 10, row[5], 1, 1)
             
-            # Print attack method
             pdf.cell(0, 10, f"Attack Method: {row[2]}", 0, 1)
             pdf.ln(5)
 
@@ -392,15 +363,16 @@ def generate_pdf_report(vulnerabilities_summary):
         print(f"{Fore.RED}Error generating PDF report: {e}{Style.RESET_ALL}")
 
 
-def send_email_report(vulnerabilities_summary):
-    """
-    Send an email report with vulnerability findings.
-    """
+def send_email_report(vulnerabilities_summary, recipient_email: str):
+    
     if not vulnerabilities_summary:
         print("No vulnerabilities to report.")
         return
 
-    # Create the email body
+    if not recipient_email:
+        print(f"{Fore.YELLOW}No recipient email provided. Skipping email report.{Style.RESET_ALL}")
+        return
+
     body = "Website Vulnerability Report\n\n"
     body += f"Scan Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
     body += "Here are the vulnerabilities detected:\n\n"
@@ -415,10 +387,8 @@ def send_email_report(vulnerabilities_summary):
         body += f"CVSS Score: {row[5]}\n"
         body += "------------------------------------------------------------\n\n"
 
-    # Create the text file to attach
     file_name = "vulnerabilities_summary.txt"
     
-    # Try to attach PDF if it exists
     pdf_file = "vulnerability_report.pdf"
     attachments = []
     if os.path.exists(file_name):
@@ -427,16 +397,13 @@ def send_email_report(vulnerabilities_summary):
         attachments.append((pdf_file, 'application/pdf'))
 
     try:
-        # Create the email message
         msg = MIMEMultipart()
         msg['Subject'] = 'Website Vulnerability Report'
         msg['From'] = 'pundirved09@gmail.com'
-        msg['To'] = 'vedanshpundir43@gmail.com'
+        msg['To'] = recipient_email
 
-        # Attach the body text
         msg.attach(MIMEText(body, 'plain'))
 
-        # Attach files
         for attachment, mime_type in attachments:
             with open(attachment, "rb") as file_attachment:
                 part = MIMEBase('application', 'octet-stream')
@@ -446,32 +413,26 @@ def send_email_report(vulnerabilities_summary):
                 part.add_header('Content-Type', mime_type)
                 msg.attach(part)
 
-        # Email server details
         smtp_server = 'smtp.gmail.com'
         smtp_port = 587
         username = 'pundirved09@gmail.com'
-        password = 'deba xgmj fquj urwm'  # Consider using environment variables for passwords
-
-        # Send the email
+        password = 'pnmaayexiejdikhr'  
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()  # Secure the connection
             server.login(username, password)
             server.sendmail(msg['From'], [msg['To']], msg.as_string())
-        print(f"{Fore.GREEN}Email sent successfully with attachments!{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}Email sent successfully to {recipient_email} with attachments!{Style.RESET_ALL}")
     except Exception as e:
-        print(f"{Fore.RED}Error sending email: {e}{Style.RESET_ALL}")
+        print(f"{Fore.RED}Error sending email to {recipient_email}: {e}{Style.RESET_ALL}")
 
 
 def discover_urls(url):
-    """
-    Discover all URLs on the given website.
-    """
+    
     discovered_urls = []
     visited = set()
     base_domain = url.split('//')[1].split('/')[0]
     
     try:
-        # Add the base URL
         discovered_urls.append(url)
         visited.add(url)
         
@@ -480,7 +441,6 @@ def discover_urls(url):
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
 
-            # Extract and resolve all anchor tags
             for anchor_tag in soup.find_all("a", href=True):
                 href = anchor_tag["href"]
                 if not href or href.startswith("#") or href.startswith("javascript:"):
@@ -488,12 +448,10 @@ def discover_urls(url):
                     
                 absolute_url = urljoin(url, href)
                 
-                # Only include URLs from the same domain and not already visited
                 if base_domain in absolute_url and absolute_url not in visited:
                     discovered_urls.append(absolute_url)
                     visited.add(absolute_url)
                     
-                    # Limit the number of URLs to scan
                     if len(discovered_urls) >= 10:
                         print("Reached URL limit. Limiting scan to 10 URLs.")
                         break
@@ -507,9 +465,7 @@ def discover_urls(url):
 
 
 def scan_url(url):
-    """
-    Scan a URL for common vulnerabilities.
-    """
+    
     vulnerabilities = {}
 
     try:
@@ -536,9 +492,7 @@ def scan_url(url):
 
 
 def check_security_headers(url, vulnerabilities):
-    """
-    Check for missing HTTP security headers.
-    """
+    
     try:
         response = requests.head(url, timeout=10)
         headers = response.headers
@@ -552,132 +506,170 @@ def check_security_headers(url, vulnerabilities):
         if 'Strict-Transport-Security' not in headers and url.startswith("https"):
             vulnerabilities["Missing Strict-Transport-Security Header"] = "Increases vulnerability to SSL stripping attacks"
     except requests.RequestException:
-        # If we can't connect, don't add header vulnerabilities
         pass
 
 
-def is_sql_injection_vulnerable(url):
-    """
-    Check for SQL injection vulnerabilities.
-    """
-    payloads = ["' OR '1'='1", "' OR 'a'='a", "';--", "' OR 1=1 --"]
+def is_sql_injection_vulnerable(url, session=None, debug=False):
     
+    if session is None:
+        session = requests.Session()
+    
+    retries = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
+    payloads = [
+        "' OR '1'='1", "' OR 'a'='a", "';--", "' OR 1=1 --",
+        "1; DROP TABLE users --", "' UNION SELECT NULL --", "') OR ('1'='1"
+    ]
+    error_patterns = [
+        r"sql syntax error", r"mysql_fetch_\w+", r"ora-\d+",
+        r"microsoft sql server.*error", r"unclosed quotation mark"
+    ]
+
     for payload in payloads:
         try:
-            # Try both GET and POST methods
-            # GET method
-            response = requests.get(f"{url}?id={payload}", timeout=10)
-            if re.search(r"sql|database|error|syntax|mysql|oracle|microsoft|server", response.text, re.IGNORECASE):
-                print(f"Possible SQL injection vulnerability detected with GET payload: {payload}")
-                return True
-                
-            # Try POST method on forms
+            parsed = urlparse(url)
+            query_params = parse_qs(parsed.query)
+            test_params = list(query_params.keys()) or ['id', 'q', 'search', 'user']
+            for param in test_params:
+                test_url = f"{url.split('?')[0]}?{param}={payload}"
+                response = session.get(test_url, timeout=5)
+                for pattern in error_patterns:
+                    if re.search(pattern, response.text, re.IGNORECASE):
+                        print(f"{Fore.YELLOW}Possible SQL injection vulnerability detected with GET payload: {payload}{Style.RESET_ALL}")
+                        return True
+
             try:
-                response = requests.get(url, timeout=10)
+                response = session.get(url, timeout=5)
                 soup = BeautifulSoup(response.text, "html.parser")
-                
-                # Find forms
                 for form in soup.find_all("form"):
                     action = form.get("action", "")
                     method = form.get("method", "get").lower()
                     form_url = urljoin(url, action)
-                    
-                    # Get form fields
                     fields = {}
                     for input_field in form.find_all("input"):
                         name = input_field.get("name")
-                        if name:
+                        if name and name.lower() in ['username', 'user', 'search', 'q', 'id']:
                             fields[name] = payload
-                    
-                    # Submit form with payload
+                    if not fields:
+                        continue
                     if method == "post":
-                        response = requests.post(form_url, data=fields, timeout=10)
+                        response = session.post(form_url, data=fields, timeout=5)
                     else:
-                        response = requests.get(form_url, params=fields, timeout=10)
-                        
-                    if re.search(r"sql|database|error|syntax|mysql|oracle|microsoft|server", response.text, re.IGNORECASE):
-                        print(f"Possible SQL injection vulnerability detected in form with payload: {payload}")
-                        return True
-            except:
-                # Skip form testing if it fails
-                pass
-                
-        except requests.RequestException:
+                        response = session.get(form_url, params=fields, timeout=5)
+                    for pattern in error_patterns:
+                        if re.search(pattern, response.text, re.IGNORECASE):
+                            print(f"{Fore.YELLOW}Possible SQL injection vulnerability detected in form with payload: {payload}{Style.RESET_ALL}")
+                            return True
+            except (requests.RequestException, AttributeError) as e:
+                if debug:
+                    print(f"{Fore.YELLOW}Form test failed for {url}: {e}{Style.RESET_ALL}")
+                continue
+
+        except requests.RequestException as e:
+            if debug:
+                print(f"{Fore.YELLOW}GET test failed for {url}: {e}{Style.RESET_ALL}")
             continue
-            
+
     return False
 
 
-def is_xss_vulnerable(url):
-    """
-    Check for XSS vulnerabilities.
-    """
+def is_xss_vulnerable(url, session=None, debug=False):
+    
+    if session is None:
+        session = requests.Session()
+    
+    retries = Retry(total=3, backoff_factor=1, status_forcelist=[408, 429, 500, 502, 503, 504])
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+
     xss_payloads = [
         "<script>alert('XSS')</script>",
         "'><script>alert('XSS')</script>",
         "\" onmouseover=\"alert('XSS')\"",
         "<img src=x onerror=alert('XSS')>",
+        "<svg onload=alert('XSS')>",
     ]
     
     for payload in xss_payloads:
         try:
-            # Test GET parameters
-            response = requests.get(f"{url}?input={payload}", timeout=10)
-            if payload in response.text:
-                print(f"Possible XSS vulnerability detected with payload: {payload}")
-                return True
-                
-            # Test forms
+            parsed = urlparse(url)
+            query_params = parse_qs(parsed.query)
+            test_params = list(query_params.keys()) or ['input', 'q', 'search', 'name', 'query']
+            for param in test_params:
+                test_url = f"{url.split('?')[0]}?{param}={quote(payload)}"
+                response = session.get(test_url, timeout=5)
+                if payload.lower() in response.text.lower() or '<script>' in response.text.lower():
+                    print(f"{Fore.YELLOW}Possible reflected XSS vulnerability detected with GET payload: {payload}{Style.RESET_ALL}")
+                    return True
+                if 'innerHTML' in response.text.lower() or 'eval(' in response.text.lower():
+                    print(f"{Fore.YELLOW}Possible DOM-based XSS vulnerability detected with GET payload: {payload}{Style.RESET_ALL}")
+                    return True
+
             try:
-                response = requests.get(url, timeout=10)
+                response = session.get(url, timeout=5)
                 soup = BeautifulSoup(response.text, "html.parser")
-                
-                # Find forms
                 for form in soup.find_all("form"):
                     action = form.get("action", "")
                     method = form.get("method", "get").lower()
                     form_url = urljoin(url, action)
-                    
-                    # Get form fields
                     fields = {}
                     for input_field in form.find_all("input"):
                         name = input_field.get("name")
-                        if name:
+                        if name and name.lower() in ['search', 'q', 'name', 'query']:
                             fields[name] = payload
-                    
-                    # Submit form with payload
+                    if not fields:
+                        continue
                     if method == "post":
-                        response = requests.post(form_url, data=fields, timeout=10)
+                        response = session.post(form_url, data=fields, timeout=5)
                     else:
-                        response = requests.get(form_url, params=fields, timeout=10)
-                        
-                    if payload in response.text:
-                        print(f"Possible XSS vulnerability detected in form with payload: {payload}")
+                        response = session.get(form_url, params=fields, timeout=5)
+                    if payload.lower() in response.text.lower() or '<script>' in response.text.lower():
+                        print(f"{Fore.YELLOW}Possible reflected XSS vulnerability detected in form with payload: {payload}{Style.RESET_ALL}")
                         return True
-            except:
-                # Skip form testing if it fails
-                pass
-                
-        except requests.RequestException:
+            except (requests.RequestException, AttributeError) as e:
+                if debug:
+                    print(f"{Fore.YELLOW}Form test failed for {url}: {e}{Style.RESET_ALL}")
+                continue
+
+        except requests.RequestException as e:
+            if debug:
+                print(f"{Fore.YELLOW}GET test failed for {url}: {e}{Style.RESET_ALL}")
             continue
-            
+
     return False
 
+def has_insecure_configuration(url, session=None, debug=False):
+    
+    if session is None:
+        session = requests.Session()
+    
+    retries = Retry(total=3, backoff_factor=1, status_forcelist=[408, 429, 500, 502, 503, 504])
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+    session.mount('https://', HTTPAdapter(max_retries=retries))
 
-def has_insecure_configuration(url):
-    """
-    Check for insecure server configurations (e.g., using HTTP instead of HTTPS).
-    """
-    if not url.startswith("https"):
-        print(f"Insecure server configuration detected: {url} uses HTTP instead of HTTPS")
-        return True
+    if not url.startswith(("http://", "https://")):
+        url = urljoin("https://", url)
+    
+    try:
+        response = session.head(url, timeout=5)
+        if response.url.startswith("http://"):
+            print(f"{Fore.YELLOW}Insecure server configuration detected: {url} uses HTTP instead of HTTPS{Style.RESET_ALL}")
+            return True
+        if 'strict-transport-security' not in response.headers:
+            print(f"{Fore.YELLOW}Missing HSTS header detected: {url}{Style.RESET_ALL}")
+            return True
+    except requests.RequestException as e:
+        if debug:
+            print(f"{Fore.YELLOW}Head request failed for {url}: {e}{Style.RESET_ALL}")
+        return False
+
     return False
 
 
 def is_open_redirect_vulnerable(url):
-    """
-    Check for Open Redirect vulnerabilities.
-    """
+    
     redirect_payloads = [
         "//evil.com",
         "https://evil.com",
@@ -685,18 +677,15 @@ def is_open_redirect_vulnerable(url):
         "https://google.com",
     ]
     
-    # Find potential redirect parameters
     try:
         response = requests.get(url, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
         
-        # Look for common redirect parameter names in links
         redirect_params = ["redirect", "url", "next", "goto", "return", "returnUrl", "returnTo", "destination"]
         
         for link in soup.find_all("a", href=True):
             href = link["href"]
             
-            # Test if any redirect parameters exist in the link
             for param in redirect_params:
                 if f"{param}=" in href:
                     for payload in redirect_payloads:
@@ -713,7 +702,6 @@ def is_open_redirect_vulnerable(url):
     except:
         pass
         
-    # Try direct parameter injection
     for payload in redirect_payloads:
         for param in ["redirect", "url", "next", "goto", "return"]:
             try:
@@ -731,21 +719,48 @@ def is_open_redirect_vulnerable(url):
 
 
 def is_directory_traversal_vulnerable(url):
-    """
-    Check for Directory Traversal vulnerabilities.
-    """
-    traversal_payloads = [
-        "../../../etc/passwd",
-        "..%2f..%2f..%2fetc%2fpasswd",
-        "../../../../../../etc/passwd",
-        "..\\..\\..\\windows\\win.ini",
-        "..%5c..%5c..%5cwindows%5cwin.ini"
-    ]
     
-    # Common file parameters
+    traversal_payloads = [
+    "../etc/passwd",
+    "../../etc/passwd",
+    "../../../etc/passwd",
+    "../../../../etc/passwd",
+    "../../../../../../etc/passwd",
+
+    # Encoded forward slashes (%2f)
+    "..%2fetc%2fpasswd",
+    "..%2f..%2fetc%2fpasswd",
+    "..%2f..%2f..%2fetc%2fpasswd",
+
+    # Double-encoded slashes
+    "..%252f..%252f..%252fetc%252fpasswd",
+
+    # Windows paths
+    "..\\..\\..\\windows\\win.ini",
+    "..%5c..%5c..%5cwindows%5cwin.ini",
+    "c:\\windows\\win.ini",
+
+    # Null byte injection (legacy PHP apps)
+    "../../../etc/passwd%00",
+    "..%2f..%2f..%2fetc%2fpasswd%00",
+
+    # Alternative traversal patterns
+    "..././..././.../etc/passwd",
+    "..;/..;/..;/etc/passwd",  # Some poorly sanitized servers
+
+    # Unix device files (for deeper exploitation testing)
+    "/dev/null",
+    "/dev/random",
+    "/proc/self/environ",
+
+    # Windows system32 access
+    "../../boot.ini",
+    "..\\..\\boot.ini"
+]
+
+    
     file_params = ["file", "path", "folder", "directory", "dir", "include", "page", "doc", "document"]
     
-    # Try each parameter with each payload
     for param in file_params:
         for payload in traversal_payloads:
             try:
@@ -753,7 +768,6 @@ def is_directory_traversal_vulnerable(url):
                 response = requests.get(test_url, timeout=10)
                 content = response.text.lower()
                 
-                # Check for common file contents
                 if ("root:" in content and ":/bin/bash" in content) or \
                    ("for 16-bit app support" in content) or \
                    ("[extensions]" in content):
@@ -765,33 +779,30 @@ def is_directory_traversal_vulnerable(url):
     return False
 
 
+
 def main():
-    """Main function to run the vulnerability scanner"""
-    # Initialize colorama for colored output
     init(autoreset=True)
     
-    # Create output directory if it doesn't exist
     output_dir = "scan_results"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    # Generate filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_file = os.path.join(output_dir, f"vulnerability_scan_{timestamp}.txt")
     
-    # Capture all output
     with capture_output(output_file):
         print(f"{Fore.CYAN}Vulnerability Scan Started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}{Style.RESET_ALL}")
         print("-" * 80)
         
-        # Get API key from environment variable or use default
+        recipient_email = input("Please enter the recipient's email address for the report: ").strip()
+        if not recipient_email:
+            print(f"{Fore.RED}No email provided. Email report will not be sent.{Style.RESET_ALL}")
+        
         if len(sys.argv) > 2:
             api_key = sys.argv[2]
         else:
             api_key = os.environ.get("NVD_API_KEY", "YOUR_API_KEY_HERE")
-
         
-        # Get target URL from command line or use default
         if len(sys.argv) > 1:
             target_url = sys.argv[1]
         else:
@@ -799,25 +810,27 @@ def main():
             
         print(f"Target URL: {target_url}")
         print(f"Using NVD API key: {'*' * len(api_key)}")
+        print(f"Recipient Email: {recipient_email}")
         
-        # Run the scan
         try:
-            scan_website(target_url, api_key)
+            scan_website(target_url, api_key, recipient_email)
         except Exception as e:
             print(f"\n{Fore.RED}Error during scan: {e}{Style.RESET_ALL}")
             import traceback
             traceback.print_exc()
+
+    
         
         print("-" * 80)
         print(f"{Fore.CYAN}Scan Completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}{Style.RESET_ALL}")
         print(f"Full scan results have been saved to: {output_file}")
 
+        open_dashboard()
         
+       
 
 
-if __name__ == "_main_":
+if __name__ == "__main__":
+
     main()
-    if len(sys.argv) != 3:
-        print("Usage: python newcode.py <URL> <API_KEY>")
-    else:
-        scan_website(sys.argv[1], sys.argv[2])
+    
