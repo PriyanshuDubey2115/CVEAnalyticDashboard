@@ -46,7 +46,6 @@ The interface is built with a modern, dark-themed design, featuring a background
   - Chart.js (for rendering charts)
 - **Backend** (assumed, adjust as needed):
   - Python (for vulnerability scanning and NVD API integration)
-  - Flask (for serving the dashboard and handling API requests)
 - **APIs**:
   - NVD API (for CVE details)
 - **Styling**:
