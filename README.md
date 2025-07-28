@@ -2,7 +2,7 @@
 
 ![Project Banner](cve.png)
 
-A modern, responsive dashboard for visualizing website vulnerability scan results, integrated with CVE details from the NVD API, OWASP references, and DREAD risk assessment. The dashboard provides an interactive interface to analyze vulnerabilities, view charts, and export reports.
+A modern, responsive dashboard for visualizing website vulnerability scan results, integrated with CVE details from the NVD API, OWASP references, and DREAD risk assessment. The dashboard provides an interactive interface to analyze vulnerabilities, view charts and export reports.
 
 [Live Demo](https://vedanshpundir.github.io/CVEAnalyticDashboard/)
 # Instruction
